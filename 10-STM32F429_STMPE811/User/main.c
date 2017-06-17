@@ -51,11 +51,19 @@ GRAPH_SCALE_Handle hScale;
 /* Offset for Layer 2 */
 #define ILI9341_FRAME_OFFSET		(uint32_t)ILI9341_PIXEL * 2
 
+#define MAX 6
+
+float intArray[MAX];
+int front = 0;
+int rear = -1;
+int itemCount = 0;
+
+void insert(float data) ;
+float removeData(void) ;
 
 int main(void) {
-	char str[30];
-		uint8_t i = 0;
 	uint32_t LastTime;
+	float ACDResult = 0;
 	/* Create TouchData struct */
 
 	
@@ -89,57 +97,66 @@ int main(void) {
 	
 	/* Set grids and border */
 	GRAPH_SetGridVis(hGraph, 1);
-    GRAPH_SetBorder(hGraph, 25, 5, 5, 5);
+  GRAPH_SetBorder(hGraph, 30, 5, 5, 5);
 	GRAPH_SetColor(hGraph, 0x00202020, GRAPH_CI_GRID);
 	GRAPH_SetVSizeX(hGraph, 100);
 	GRAPH_SetVSizeY(hGraph, 100);
 	
 	/* Create a curve for graph */
-	hData = GRAPH_DATA_YT_Create(GUI_DARKRED, 200, 0, 0); 
-	hData2 = GRAPH_DATA_YT_Create(GUI_DARKGREEN, 200, 0, 0); 
-	hData3 = GRAPH_DATA_YT_Create(GUI_YELLOW, 200, 0, 0); 
+	hData = GRAPH_DATA_YT_Create(GUI_DARKRED, 315, 0, 0);  
 	
 	/* Attach curve to graph */
     GRAPH_AttachData(hGraph, hData);
-    GRAPH_AttachData(hGraph, hData2);
-    //GRAPH_AttachData(hGraph, hData3);
 	
 	/* Create scale for graph */
-	hScale = GRAPH_SCALE_Create(3, GUI_TA_LEFT, GRAPH_SCALE_CF_VERTICAL, 25);
+	hScale = GRAPH_SCALE_Create(3, GUI_TA_LEFT, GRAPH_SCALE_CF_VERTICAL, 10);
 	GRAPH_SCALE_SetTextColor(hScale, GUI_BLUE);
+	GRAPH_SCALE_SetNumDecs(hScale,1);
+	GRAPH_SCALE_SetTickDist(hScale, 20);
+	GRAPH_DATA_YT_SetAlign(hData,GRAPH_ALIGN_LEFT);
 	/* Attach it to graph */
 	GRAPH_AttachScale(hGraph, hScale);
 	
-	/* Add manual data for testing if graph works */
-	GRAPH_DATA_YT_AddValue(hData, 100 + 60 * sin((float)2 * (float)5 * (float)3.14 * (float)15 / (float)255));
-	GRAPH_DATA_YT_AddValue(hData, 100 + 60 * sin((float)2 * (float)5 * (float)3.14 * (float)15 / (float)255));
-	GRAPH_DATA_YT_AddValue(hData, 100 + 60 * sin((float)2 * (float)5 * (float)3.14 * (float)15 / (float)255));
-	GRAPH_DATA_YT_AddValue(hData, 100 + 60 * sin((float)2 * (float)5 * (float)3.14 * (float)15 / (float)255));
-	GRAPH_DATA_YT_AddValue(hData, 100 + 60 * sin((float)2 * (float)5 * (float)3.14 * (float)15 / (float)255));
-	GRAPH_DATA_YT_AddValue(hData, 100 + 60 * sin((float)2 * (float)5 * (float)3.14 * (float)15 / (float)255));
-	
 	/* Change layers for LTDC, show layer 2 on LCD */
 	GUI_SetBkColor(GUI_RED);					
-if (TM_EMWIN_Exec()) {
-		/* Turn on GREEN LED if non-zero value is returned */
-		TM_DISCO_LedOn(LED_GREEN);
-	}
-
-	
+	TM_EMWIN_Exec();
+	insert(120);
+	insert(120);
+	insert(120);
+	insert(120);
 	while(1){
-				if (TM_EMWIN_Exec()) {
-			/* Toggle RED led if non-zero value is returned from GUI_Exec() */
-			TM_DISCO_LedToggle(LED_RED);
-		}
+	TM_EMWIN_Exec();
 	if ((TM_DELAY_Time() - LastTime) > 10) {
 			/* Reset time */
 			LastTime = TM_DELAY_Time();
 			
 			/* Add new fake values to graph */
-			GRAPH_DATA_YT_AddValue(hData, 100 + 60 * sin((float)2 * (float)5 * (float)3.14 * (float)i / (float)255));
-			GRAPH_DATA_YT_AddValue(hData2, 100 + 50 * sin((float)2 * (float)5 * (float)3.14 * (float)i / (float)255));
-
-			i++;
+			GRAPH_DATA_YT_AddValue(hData, removeData());
 		}
+	else{
+			ACDResult = TM_ADC_Read(ADC1, ADC_Channel_0);
+			insert(ACDResult);
 	}
+	
+	}
+}
+void insert(float data) {
+
+      if(rear == MAX-1) {
+         rear = -1;            
+      }       
+
+      intArray[++rear] = data;
+      itemCount++;
+}
+
+float removeData() {
+   int data = intArray[front++];
+	
+   if(front == MAX) {
+      front = 0;
+   }
+	
+   itemCount--;
+   return data;  
 }
