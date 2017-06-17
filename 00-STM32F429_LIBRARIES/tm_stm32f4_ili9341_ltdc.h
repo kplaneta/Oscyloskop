@@ -172,7 +172,7 @@ PA12 <-> R5    | PB10 <-> G4 |                |             |                 | 
 
 /**
  * @brief  Possible orientations for LCD
- */
+ */ 
 typedef enum {
 	TM_ILI9341_Orientation_Portrait_1,  /*!< Portrait orientation mode 1 */
 	TM_ILI9341_Orientation_Portrait_2,  /*!< Portrait orientation mode 2 */

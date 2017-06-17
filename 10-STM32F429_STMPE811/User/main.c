@@ -12,135 +12,134 @@
  *	@packs		STM32F4xx Keil packs version 2.2.0 or greater required
  *	@stdperiph	STM32F4xx Standard peripheral drivers version 1.4.0 or greater required
  */
+
+//#include "tm_stm32f4_ili9341.h"
+//#include "tm_stm32f4_stmpe811.h"
+
 /* Include core modules */
 #include "stm32f4xx.h"
 /* Include my libraries here */
 #include "defines.h"
-#include "tm_stm32f4_ili9341.h"
-#include "tm_stm32f4_stmpe811.h"
+#include "tm_stm32f4_delay.h"
+#include "tm_stm32f4_disco.h"
+#include "tm_stm32f4_lcd.h"
+#include "tm_stm32f4_i2c.h"
+#include "tm_stm32f4_usart.h"
+#include "stdio.h"
+#include "tm_stm32f4_dma2d_graphic.h"
+#include "tm_stm32f4_emwin.h"
+#include "GUI.h"
 #include "tm_stm32f4_adc.h"
-#include <stdio.h>
 
-void PrintSquareWave(uint16_t posy);
-void ClearScreen(void);
-void PrintADCResult(uint16_t result,uint16_t posy);
+#include "PROGBAR.h"
+#include "BUTTON.h"
+#include "GRAPH.h"
+#include "DIALOG.h"
+#include "math.h"
+
+/* Graph handle */
+GRAPH_Handle hGraph;
+GRAPH_DATA_Handle hData;
+GRAPH_DATA_Handle hData2;
+GRAPH_DATA_Handle hData3;
+GRAPH_SCALE_Handle hScale;
+
+#define ILI9341_PIXEL				76800
+/* Starting buffer address in RAM */
+/* Offset for Layer 1 = SDRAM START ADDRESS + FRAME_BUFFER */
+#define ILI9341_FRAME_BUFFER		SDRAM_START_ADR
+/* Offset for Layer 2 */
+#define ILI9341_FRAME_OFFSET		(uint32_t)ILI9341_PIXEL * 2
+
 
 int main(void) {
 	char str[30];
+		uint8_t i = 0;
+	uint32_t LastTime;
 	/* Create TouchData struct */
-	TM_STMPE811_TouchData touchData;
 
 	
 	/* Initialize system */
 	SystemInit();
 	
 	/* Initialize LCD */
-	TM_ILI9341_Init();
 	
 	/* Initialize touchscreen */
-	if (TM_STMPE811_Init() != TM_STMPE811_State_Ok) {
-		TM_ILI9341_Puts(20, 20, "STMPE811 Error", &TM_Font_11x18, ILI9341_COLOR_ORANGE, ILI9341_COLOR_BLACK);
-	}
-	
+		/* Initialize delay */
+	TM_DELAY_Init();
 	/* Initialize ADC */
 	TM_ADC_Init(ADC1, ADC_Channel_0);
+		/* Init EMWIN */
+	TM_EMWIN_Init();
+			/* Rotate LCD */
+	TM_EMWIN_Rotate(TM_EMWIN_Rotate_270);
+		/* Init DMA2D graphic acceleration */
+	TM_DMA2DGRAPHIC_Init();
+		/* 
+	   Enable memory for EMWIN 
+	   This features allows you to update screen very fast without flickering, because EMWIN draws on LCD layer 1 (LTDC) 
+	   but layer 2 (LTDC) is shown on LCD. After all drawings from EMWIN are done, layer 1 is copied to layer 2 
+	   and everything is shown to user at same time, without flickering.
+	   You have to use @ref TM_EMWIN_Exec() to execute all EMWIN pending tasks in future or memory does not have effect here
+	*/
+	TM_EMWIN_MemoryEnable();
 	
-	/* Rotate LCD */
-	TM_ILI9341_Rotate(TM_ILI9341_Orientation_Landscape_2);
+	/* Create graph through all LCD screen */
+	hGraph = GRAPH_CreateEx(0, 0, 320, 240, 0, WM_CF_SHOW, 0, GUI_ID_GRAPH0);
 	
-	touchData.orientation = TM_STMPE811_Orientation_Landscape_2;
+	/* Set grids and border */
+	GRAPH_SetGridVis(hGraph, 1);
+    GRAPH_SetBorder(hGraph, 25, 5, 5, 5);
+	GRAPH_SetColor(hGraph, 0x00202020, GRAPH_CI_GRID);
+	GRAPH_SetVSizeX(hGraph, 100);
+	GRAPH_SetVSizeY(hGraph, 100);
 	
-	ClearScreen();
-	PrintSquareWave(0);
-
-
-	/* Print triangular wave*/
-	/*	for(int i = 0; i < 7; i++)
-	{
-		TM_ILI9341_DrawLine(20 + i*40, 160, 40 + i*40, 180, ILI9341_COLOR_GREEN);
-		TM_ILI9341_DrawLine(40 + i*40, 180, 60 + i*40, 160, ILI9341_COLOR_GREEN);
-		TM_ILI9341_DrawLine(60 + i*40, 160, 60 + i*40, 180, ILI9341_COLOR_GREEN);
-		TM_ILI9341_DrawLine(40 + i*40, 160, 40 + i*40, 180, ILI9341_COLOR_GREEN);
-	}*/
-
-		
-		while (1) {
-						
-			uint16_t res;
-			res = TM_ADC_Read(ADC1, ADC_Channel_0);
-			sprintf(str, "%dl",res);
-			TM_ILI9341_Puts(100, 80, "Odczyt ADC:", &TM_Font_11x18, ILI9341_COLOR_ORANGE, ILI9341_COLOR_BLACK);
-			TM_ILI9341_Puts(140, 100, "      ", &TM_Font_11x18, ILI9341_COLOR_ORANGE, ILI9341_COLOR_BLACK);
-			TM_ILI9341_Puts(140, 100, str, &TM_Font_11x18, ILI9341_COLOR_ORANGE, ILI9341_COLOR_BLACK);
-			
-			if(TM_STMPE811_ReadTouch(&touchData) == TM_STMPE811_State_Pressed)
-			{
+	/* Create a curve for graph */
+	hData = GRAPH_DATA_YT_Create(GUI_DARKRED, 200, 0, 0); 
+	hData2 = GRAPH_DATA_YT_Create(GUI_DARKGREEN, 200, 0, 0); 
+	hData3 = GRAPH_DATA_YT_Create(GUI_YELLOW, 200, 0, 0); 
 	
-				if(TM_STMPE811_TouchInRectangle(&touchData, 20, 20, 280, 185))
-				{
-					ClearScreen();
-					PrintSquareWave(touchData.y - 60);						
-				}
-			}
-			else
-			{
-
-
-			}
-						PrintADCResult(res,140);
-
+	/* Attach curve to graph */
+    GRAPH_AttachData(hGraph, hData);
+    GRAPH_AttachData(hGraph, hData2);
+    //GRAPH_AttachData(hGraph, hData3);
+	
+	/* Create scale for graph */
+	hScale = GRAPH_SCALE_Create(3, GUI_TA_LEFT, GRAPH_SCALE_CF_VERTICAL, 25);
+	GRAPH_SCALE_SetTextColor(hScale, GUI_BLUE);
+	/* Attach it to graph */
+	GRAPH_AttachScale(hGraph, hScale);
+	
+	/* Add manual data for testing if graph works */
+	GRAPH_DATA_YT_AddValue(hData, 100 + 60 * sin((float)2 * (float)5 * (float)3.14 * (float)15 / (float)255));
+	GRAPH_DATA_YT_AddValue(hData, 100 + 60 * sin((float)2 * (float)5 * (float)3.14 * (float)15 / (float)255));
+	GRAPH_DATA_YT_AddValue(hData, 100 + 60 * sin((float)2 * (float)5 * (float)3.14 * (float)15 / (float)255));
+	GRAPH_DATA_YT_AddValue(hData, 100 + 60 * sin((float)2 * (float)5 * (float)3.14 * (float)15 / (float)255));
+	GRAPH_DATA_YT_AddValue(hData, 100 + 60 * sin((float)2 * (float)5 * (float)3.14 * (float)15 / (float)255));
+	GRAPH_DATA_YT_AddValue(hData, 100 + 60 * sin((float)2 * (float)5 * (float)3.14 * (float)15 / (float)255));
+	
+	/* Change layers for LTDC, show layer 2 on LCD */
+	GUI_SetBkColor(GUI_RED);					
+if (TM_EMWIN_Exec()) {
+		/* Turn on GREEN LED if non-zero value is returned */
+		TM_DISCO_LedOn(LED_GREEN);
 	}
-}
 
-void ClearScreen(void)
-{
-		/* Fill with black color */
-	TM_ILI9341_Fill(ILI9341_COLOR_BLACK);
 	
-	/* Draw a frame */
-	TM_ILI9341_DrawRectangle(20, 20, 300, 225, ILI9341_COLOR_YELLOW);
-	
-	/* Write mode and scale */
-	TM_ILI9341_Puts(100, 5, "Prototyp oscyloskopu", &TM_Font_7x10, ILI9341_COLOR_ORANGE, ILI9341_COLOR_BLACK);
-	//TM_ILI9341_Puts(50, 230, "CH1: 500 mV", &TM_Font_7x10, ILI9341_COLOR_BLUE, ILI9341_COLOR_BLACK);
-	
-	/* Print grid */
-	
-	for(int i=0; i<14; i++)
-	{
-		for(int j=0; j<19; j++)
-		{
-			TM_ILI9341_DrawLine(20+j*15, 20+ i*15, 20+j*15, 20+i*15, ILI9341_COLOR_GRAY);
+	while(1){
+				if (TM_EMWIN_Exec()) {
+			/* Toggle RED led if non-zero value is returned from GUI_Exec() */
+			TM_DISCO_LedToggle(LED_RED);
+		}
+	if ((TM_DELAY_Time() - LastTime) > 10) {
+			/* Reset time */
+			LastTime = TM_DELAY_Time();
+			
+			/* Add new fake values to graph */
+			GRAPH_DATA_YT_AddValue(hData, 100 + 60 * sin((float)2 * (float)5 * (float)3.14 * (float)i / (float)255));
+			GRAPH_DATA_YT_AddValue(hData2, 100 + 50 * sin((float)2 * (float)5 * (float)3.14 * (float)i / (float)255));
+
+			i++;
 		}
 	}
-}
-
-void PrintSquareWave(uint16_t posy)
-{
-		/* Print square wave */	
-	for(int i = 0; i < 7; i++)
-	{
-		TM_ILI9341_DrawLine(20 + i*40, 60+posy, 40 + i*40, 60+posy, ILI9341_COLOR_BLUE);
-		TM_ILI9341_DrawLine(40 + i*40, 80+posy, 60 + i*40, 80+posy, ILI9341_COLOR_BLUE);
-		TM_ILI9341_DrawLine(60 + i*40, 60+posy, 60 + i*40, 80+posy, ILI9341_COLOR_BLUE);
-		TM_ILI9341_DrawLine(40 + i*40, 60+posy, 40 + i*40, 80+posy, ILI9341_COLOR_BLUE);
-	}
-}
-
-void PrintADCResult(uint16_t result, uint16_t posy)
-{
-		uint16_t ADCresult[420];
-		static int i=20;								//Begin of the frame
-
-				if( i<300)
-				{
-					TM_ILI9341_DrawPixel(i, ADCresult[i-20], ILI9341_COLOR_BLACK);
-					ADCresult[i-20] =((posy - result/10));
-					TM_ILI9341_DrawPixel(i, ADCresult[i-20], ILI9341_COLOR_GREEN);
-					i++;
-				}
-			else
-				{
-					i = 20;
-				}
 }

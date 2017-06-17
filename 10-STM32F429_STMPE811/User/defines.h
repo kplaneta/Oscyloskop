@@ -31,6 +31,7 @@
 /* Put your global defines for all libraries here used in your project */
 
 /* Increase speed for SPI5 = LCD on STM32F429 board */
-#define TM_SPI5_PRESCALER	SPI_BaudRatePrescaler_2
+//#define TM_SPI5_PRESCALER	SPI_BaudRatePrescaler_2
+#define TM_EMWIN_ROTATE_LCD				1
 
 #endif
