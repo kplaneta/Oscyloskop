@@ -19,5 +19,6 @@ void ShowResult(void);
 void CreateButtons(void);
 void TouchInit(void);
 bool TouchDetected(void);
+void MyDelay(void);
 
 #endif

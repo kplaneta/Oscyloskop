@@ -69,9 +69,9 @@ void CreateButtons(void)
 	 Button4 = BUTTON_Create (230, 200, 70, 50, 1, BUTTON_CF_SHOW );
 
 	 //BUTTON_SetPressed(Button1, BUTTON_STATE_PRESSED);
-	 BUTTON_SetText(Button1, "Przycisk 1");
-	 BUTTON_SetText(Button2, "Przycisk 2");
-	 BUTTON_SetText(Button3, "Przycisk 3");
+	 BUTTON_SetText(Button1, "STOP");
+	 BUTTON_SetText(Button2, "Cursor 1");
+	 BUTTON_SetText(Button3, "Cursor 2");
 	 BUTTON_SetText(Button4, "Przycisk 4");
 
 	
@@ -87,7 +87,7 @@ void ShowResult(void){
 		TouchDetected();
 			if(!BUTTON_IsPressed(Button1)){
 			/* Add new fake values to graph */
-			GRAPH_DATA_YT_AddValue(hData, 100 +  Result);
+			GRAPH_DATA_YT_AddValue(hData, 90 +  Result);
 			GRAPH_DATA_YT_AddValue(hData2, 100 + 50 * sin((float)2 * (float)5 * (float)3.14 * (float)i / (float)255));
 
 			i++;
@@ -112,19 +112,50 @@ touchData.orientation = TM_STMPE811_Orientation_Landscape_2;
 
 	if (TM_STMPE811_ReadTouch(&touchData) == TM_STMPE811_State_Pressed) {
 			/* Touch valid */
-			if(touchData.y > 20 && touchData.y < 90 && touchData.x > 200 && touchData.x < 250)
+		
+			if(TM_STMPE811_TouchInRectangle(&touchData,200,20,70,50))
 			{
-				BUTTON_SetPressed(Button1, BUTTON_STATE_PRESSED);
-				BUTTON_SetText(Button1, "1 wcisniety");
+				
+				if(!BUTTON_IsPressed(Button1)){
+					BUTTON_SetPressed(Button1, BUTTON_STATE_PRESSED);
+					BUTTON_SetText(Button1, "RUN");
+					MyDelay();
+					return true;
+				}
+				else{
+					BUTTON_SetPressed(Button1, 0);
+					BUTTON_SetText(Button1, "STOP");
+					MyDelay();
+					return false;
+				}
+			}
+			else if(TM_STMPE811_TouchInRectangle(&touchData,200,90,70,50))
+			{
+				if(!BUTTON_IsPressed(Button2)){
+				BUTTON_SetPressed(Button2, BUTTON_STATE_PRESSED);
+				
 				return true;
+				}
+				else{
+					BUTTON_SetPressed(Button2, 0);
+					GUI_Init();
+					GUI_DrawVLine(120, 0, 140);
+					return false;
+				}
 			}
 			else
 			{
-				BUTTON_SetPressed(Button1, 0);
-				BUTTON_SetText(Button1, "1 wcisniety");
-				return false;
+			
 			}
+			
 	}
 	return false;
 }
 
+void MyDelay(void)
+{
+	int i;
+	for (i=0; i<10000; i++)
+	{
+	}
+}
