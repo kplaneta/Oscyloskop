@@ -791,6 +791,11 @@
               <FileType>1</FileType>
               <FilePath>.\User\system_stm32f4xx.c</FilePath>
             </File>
+            <File>
+              <FileName>lcd.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\User\lcd.c</FilePath>
+            </File>
           </Files>
         </Group>
       </Groups>
