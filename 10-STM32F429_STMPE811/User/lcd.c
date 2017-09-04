@@ -2,6 +2,7 @@
 
 uint32_t LastTime;
 uint8_t i = 0;
+uint32_t CursorPosition = 70;
 
 /* Graph handle */
 GRAPH_Handle hGraph;
@@ -9,6 +10,8 @@ GRAPH_DATA_Handle hData;
 GRAPH_DATA_Handle hData2;
 GRAPH_DATA_Handle hData3;
 GRAPH_SCALE_Handle hScale;
+
+GUI_POINT Cursor[2];
 
 	/* Add a button */
 	BUTTON_Handle Button1;
@@ -25,20 +28,27 @@ void CreateGraph(void){
 	
 	/* Set grids and border */
 	GRAPH_SetGridVis(hGraph, 1);
-    GRAPH_SetBorder(hGraph, 25, 5, 5, 5);
+  GRAPH_SetBorder(hGraph, 25, 5, 5, 5);
 	GRAPH_SetColor(hGraph, 0x00202020, GRAPH_CI_GRID);
+	GRAPH_SetGridOffY(hGraph, -10);
 	GRAPH_SetVSizeX(hGraph, 100);
 	GRAPH_SetVSizeY(hGraph, 100);
 	
 	/* Create a curve for graph */
 	hData = GRAPH_DATA_YT_Create(GUI_DARKRED, 305, 0, 0); 
 	hData2 = GRAPH_DATA_YT_Create(GUI_DARKGREEN, 305, 0, 0); 
-	hData3 = GRAPH_DATA_YT_Create(GUI_YELLOW, 305, 0, 0); 
+
+	Cursor[0].x = 0;
+	Cursor[0].y = 70;
+	Cursor[1].x = 300;
+	Cursor[1].y = 70;
+	hData3 = GRAPH_DATA_XY_Create(GUI_YELLOW, 305, Cursor, 2); // kursor
+ 
 	
 	/* Attach curve to graph */
     GRAPH_AttachData(hGraph, hData);
     GRAPH_AttachData(hGraph, hData2);
-    //GRAPH_AttachData(hGraph, hData3);
+
 	
 	/* Create scale for graph */
 	hScale = GRAPH_SCALE_Create(3, GUI_TA_LEFT, GRAPH_SCALE_CF_VERTICAL | GUI_TA_VCENTER, 82);
@@ -70,9 +80,9 @@ void CreateButtons(void)
 
 	 //BUTTON_SetPressed(Button1, BUTTON_STATE_PRESSED);
 	 BUTTON_SetText(Button1, "STOP");
-	 BUTTON_SetText(Button2, "Cursor 1");
-	 BUTTON_SetText(Button3, "Cursor 2");
-	 BUTTON_SetText(Button4, "Przycisk 4");
+	 BUTTON_SetText(Button2, "Cursor");
+	 BUTTON_SetText(Button3, "UP");
+	 BUTTON_SetText(Button4, "DOWN");
 
 	
 }
@@ -107,55 +117,79 @@ void TouchInit(void)
 
 bool TouchDetected(void)
 {
-		char str[30];
-touchData.orientation = TM_STMPE811_Orientation_Landscape_2;
 
+touchData.orientation = TM_STMPE811_Orientation_Landscape_2;
+BUTTON_SetPressed(Button2, 0);
+BUTTON_SetPressed(Button3, 0);
+	
 	if (TM_STMPE811_ReadTouch(&touchData) == TM_STMPE811_State_Pressed) {
 			/* Touch valid */
 		
-			if(TM_STMPE811_TouchInRectangle(&touchData,200,20,70,50))
+			if(TM_STMPE811_TouchInRectangle(&touchData,240,20,80,40))
 			{
 				
 				if(!BUTTON_IsPressed(Button1)){
 					BUTTON_SetPressed(Button1, BUTTON_STATE_PRESSED);
 					BUTTON_SetText(Button1, "RUN");
-					MyDelay();
+					GUI_Delay(100);
 					return true;
 				}
 				else{
 					BUTTON_SetPressed(Button1, 0);
 					BUTTON_SetText(Button1, "STOP");
-					MyDelay();
+					GUI_Delay(100);
 					return false;
 				}
 			}
-			else if(TM_STMPE811_TouchInRectangle(&touchData,200,90,70,50))
+			else if(TM_STMPE811_TouchInRectangle(&touchData,170,20,80,40))
 			{
 				if(!BUTTON_IsPressed(Button2)){
-				BUTTON_SetPressed(Button2, BUTTON_STATE_PRESSED);
-				
-				return true;
-				}
-				else{
+					BUTTON_SetPressed(Button2, BUTTON_STATE_PRESSED);
+					GRAPH_AttachData(hGraph, hData3);
+					GUI_Delay(40);
+					return true;
+				}else{
 					BUTTON_SetPressed(Button2, 0);
-					GUI_Init();
-					GUI_DrawVLine(120, 0, 140);
+					GRAPH_DetachData(hGraph, hData3);
+					GUI_Delay(40);
 					return false;
 				}
 			}
-			else
+			else if(TM_STMPE811_TouchInRectangle(&touchData,90,20,80,40))
 			{
-			
-			}
-			
+				if(!BUTTON_IsPressed(Button3)){
+					BUTTON_SetPressed(Button3, BUTTON_STATE_PRESSED);
+					GRAPH_DATA_XY_Delete(hData3);
+					Cursor[0].y += 5;
+					Cursor[1].y += 5;
+					hData3 = GRAPH_DATA_XY_Create(GUI_YELLOW, 305, Cursor, 2);
+					GRAPH_AttachData(hGraph, hData3);
+					BUTTON_SetPressed(Button3, 0);
+				return true;
+				}else{
+					BUTTON_SetPressed(Button3, 0);
+					GUI_Delay(100);
+					return false;
+				}
+			}		
+			else if(TM_STMPE811_TouchInRectangle(&touchData,10,20,80,40))
+			{
+				if(!BUTTON_IsPressed(Button4)){
+					BUTTON_SetPressed(Button4, BUTTON_STATE_PRESSED);
+					GRAPH_DATA_XY_Delete(hData3);
+					Cursor[0].y -= 5;
+					Cursor[1].y -= 5;
+					hData3 = GRAPH_DATA_XY_Create(GUI_YELLOW, 305, Cursor, 2);
+					GRAPH_AttachData(hGraph, hData3);
+					BUTTON_SetPressed(Button4, 0);
+				return true;
+				}else{
+					BUTTON_SetPressed(Button4, 0);
+					GUI_Delay(100);
+					return false;
+				}
+			}					
 	}
 	return false;
 }
 
-void MyDelay(void)
-{
-	int i;
-	for (i=0; i<10000; i++)
-	{
-	}
-}
