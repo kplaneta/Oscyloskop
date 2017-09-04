@@ -117,7 +117,12 @@ void TouchInit(void)
 
 bool TouchDetected(void)
 {
-
+double position = CursorPosition*0.018;
+	char ble[3];					
+	if(position < 1.65){
+		position = -3 + position;
+	}
+	sprintf(ble, "%.2f", position);
 touchData.orientation = TM_STMPE811_Orientation_Landscape_2;
 BUTTON_SetPressed(Button3, 0);
 BUTTON_SetPressed(Button4, 0);
@@ -146,11 +151,13 @@ BUTTON_SetPressed(Button4, 0);
 				if(!BUTTON_IsPressed(Button2)){
 					BUTTON_SetPressed(Button2, BUTTON_STATE_PRESSED);
 					GRAPH_AttachData(hGraph, hData3);
+					BUTTON_SetText(Button2, ble);
 					GUI_Delay(100);
 					return true;
 				}else{
 					BUTTON_SetPressed(Button2, 0);
 					GRAPH_DetachData(hGraph, hData3);
+					BUTTON_SetText(Button2, "Cursor");
 					GUI_Delay(100);
 					return false;
 				}
@@ -164,9 +171,11 @@ BUTTON_SetPressed(Button4, 0);
 						GRAPH_DATA_XY_Delete(hData3);
 						Cursor[0].y += 5;
 						Cursor[1].y += 5;
+						CursorPosition +=5;
 						hData3 = GRAPH_DATA_XY_Create(GUI_YELLOW, 305, Cursor, 2);
 						GRAPH_AttachData(hGraph, hData3);
 						BUTTON_SetPressed(Button3, 0);
+						BUTTON_SetText(Button2, ble);
 					return true;
 					}else{
 						BUTTON_SetPressed(Button3, 0);
@@ -184,9 +193,11 @@ BUTTON_SetPressed(Button4, 0);
 						GRAPH_DATA_XY_Delete(hData3);
 						Cursor[0].y -= 5;
 						Cursor[1].y -= 5;
+						CursorPosition -=5;
 						hData3 = GRAPH_DATA_XY_Create(GUI_YELLOW, 305, Cursor, 2);
 						GRAPH_AttachData(hGraph, hData3);
 						BUTTON_SetPressed(Button4, 0);
+						BUTTON_SetText(Button2, ble);
 					return true;
 					}else{
 						BUTTON_SetPressed(Button4, 0);
