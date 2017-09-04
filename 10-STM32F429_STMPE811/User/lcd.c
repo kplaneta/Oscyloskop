@@ -119,8 +119,8 @@ bool TouchDetected(void)
 {
 
 touchData.orientation = TM_STMPE811_Orientation_Landscape_2;
-BUTTON_SetPressed(Button2, 0);
 BUTTON_SetPressed(Button3, 0);
+BUTTON_SetPressed(Button4, 0);
 	
 	if (TM_STMPE811_ReadTouch(&touchData) == TM_STMPE811_State_Pressed) {
 			/* Touch valid */
@@ -146,50 +146,55 @@ BUTTON_SetPressed(Button3, 0);
 				if(!BUTTON_IsPressed(Button2)){
 					BUTTON_SetPressed(Button2, BUTTON_STATE_PRESSED);
 					GRAPH_AttachData(hGraph, hData3);
-					GUI_Delay(40);
+					GUI_Delay(100);
 					return true;
 				}else{
 					BUTTON_SetPressed(Button2, 0);
 					GRAPH_DetachData(hGraph, hData3);
-					GUI_Delay(40);
+					GUI_Delay(100);
 					return false;
 				}
 			}
 			else if(TM_STMPE811_TouchInRectangle(&touchData,90,20,80,40))
 			{
-				if(!BUTTON_IsPressed(Button3)){
-					BUTTON_SetPressed(Button3, BUTTON_STATE_PRESSED);
-					GRAPH_DATA_XY_Delete(hData3);
-					Cursor[0].y += 5;
-					Cursor[1].y += 5;
-					hData3 = GRAPH_DATA_XY_Create(GUI_YELLOW, 305, Cursor, 2);
-					GRAPH_AttachData(hGraph, hData3);
-					BUTTON_SetPressed(Button3, 0);
-				return true;
-				}else{
-					BUTTON_SetPressed(Button3, 0);
-					GUI_Delay(100);
-					return false;
-				}
+				if(BUTTON_IsPressed(Button2)){
+					if(!BUTTON_IsPressed(Button3)){
+						BUTTON_SetPressed(Button3, BUTTON_STATE_PRESSED);
+						GRAPH_DetachData(hGraph,hData3);
+						GRAPH_DATA_XY_Delete(hData3);
+						Cursor[0].y += 5;
+						Cursor[1].y += 5;
+						hData3 = GRAPH_DATA_XY_Create(GUI_YELLOW, 305, Cursor, 2);
+						GRAPH_AttachData(hGraph, hData3);
+						BUTTON_SetPressed(Button3, 0);
+					return true;
+					}else{
+						BUTTON_SetPressed(Button3, 0);
+						GUI_Delay(100);
+						return false;
+					}
+			}
 			}		
 			else if(TM_STMPE811_TouchInRectangle(&touchData,10,20,80,40))
 			{
-				if(!BUTTON_IsPressed(Button4)){
-					BUTTON_SetPressed(Button4, BUTTON_STATE_PRESSED);
-					GRAPH_DATA_XY_Delete(hData3);
-					Cursor[0].y -= 5;
-					Cursor[1].y -= 5;
-					hData3 = GRAPH_DATA_XY_Create(GUI_YELLOW, 305, Cursor, 2);
-					GRAPH_AttachData(hGraph, hData3);
-					BUTTON_SetPressed(Button4, 0);
-				return true;
-				}else{
-					BUTTON_SetPressed(Button4, 0);
-					GUI_Delay(100);
-					return false;
-				}
-			}					
+				if(BUTTON_IsPressed(Button2)){
+					if(!BUTTON_IsPressed(Button4)){
+						BUTTON_SetPressed(Button4, BUTTON_STATE_PRESSED);
+						GRAPH_DetachData(hGraph,hData3);
+						GRAPH_DATA_XY_Delete(hData3);
+						Cursor[0].y -= 5;
+						Cursor[1].y -= 5;
+						hData3 = GRAPH_DATA_XY_Create(GUI_YELLOW, 305, Cursor, 2);
+						GRAPH_AttachData(hGraph, hData3);
+						BUTTON_SetPressed(Button4, 0);
+					return true;
+					}else{
+						BUTTON_SetPressed(Button4, 0);
+						GUI_Delay(100);
+						return false;
+					}
+			}
+		}				
 	}
 	return false;
 }
-
